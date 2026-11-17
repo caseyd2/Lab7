@@ -1,0 +1,122 @@
+
+@page "/books"
+@inject LibraryService LibraryService
+
+<PageTitle>Book Management</PageTitle>
+
+<h1 class="bi bi-book-half"> Book Management</h1>
+
+<div class="grid-2">
+    <section class="menu-section">
+        <header class="menu-section-header">
+            <h2 class="bi bi-book">All books</h2>
+            <a class="btn btn-primary mb-2" href="/books/add" style="float: right;">
+                <i class="bi bi-plus-lg"></i> Add book
+            </a>
+        </header>
+
+        <div data-list="title,author,isbn">
+            <input type="search" class="search mb-2" placeholder="Search books..." style="width: 100%;" />
+            <button class="sort btn btn-secondary mb-2 fs-200" data-sort="title">
+                Sort By Name (A-Z)
+            </button>
+
+            <ul class="list" style="list-style-type: none; padding: 0;">
+                @foreach (var (book, bookCount) in booksDict)
+                {
+                    <li class="menu-section-card mb-1">
+                        <div class="row mb-2 fs-300">
+                            <span class="text-muted" style="float: left; margin: -10px 10px 8px 0;">
+                                ID: @book.Id
+                            </span>
+
+                            <div class="col-7 fs-400 title">
+                                @book.Title
+                            </div>
+
+                            <a href="books/edit/@book.Id" class="col-2">
+                                <i class="bi bi-pencil-fill"></i> Edit
+                            </a>
+
+                            <a href="books/delete/@book.Id" class="col-2 text-danger">
+                                <i class="bi bi-trash-fill"></i> Delete
+                            </a>
+                        </div>
+
+                        <div class="row fs-300">
+                            <div class="col-3">Author:</div>
+                            <div class="col author">@book.Author</div>
+                        </div>
+
+                        <div class="row fs-300">
+                            <div class="col-3">ISBN:</div>
+                            <div class="col isbn">@book.ISBN</div>
+                        </div>
+
+                        <div class="row fs-300">
+                            <div class="col-3">Available Copies:</div>
+                            <div class="col">
+                                @bookCount
+                                @if (bookCount > 0)
+                                {
+                                    <a href="books/borrow/@book.Id" class="ms-3 btn btn-secondary btn-sm">
+                                        Borrow
+                                    </a>
+                                }
+                            </div>
+                        </div>
+                    </li>
+                }
+            </ul>
+        </div>
+    </section>
+
+    <section class="menu-section">
+        <header class="menu-section-header">
+            <h2>Borrow/return</h2>
+        </header>
+
+        <div class="menu-section-card" style="flex-basis: 100%;">
+            @if (borrowers.Count == 0)
+            {
+                <p class="mb-0">
+                    No books are currently borrowed. Use <strong>Borrow</strong>
+                    to lend a copy.
+                </p>
+            }
+            else
+            {
+                <ul class="mb-0" style="list-style-type: none; padding: 0;">
+                    @foreach (var (user, borrowed) in borrowers)
+                    {
+                        @foreach (var book in borrowed)
+                        {
+                            <li class="mb-1">
+                                <strong>@book.Title</strong> borrowed by @user.Name
+                                <a href="users/return/@user.Id"
+                                   class="ms-2 btn btn-secondary btn-sm">
+                                    Return
+                                </a>
+                            </li>
+                        }
+                    }
+                </ul>
+            }
+        </div>
+    </section>
+</div>
+
+@code {
+    private Dictionary<Book, int> booksDict = new();
+    private List<KeyValuePair<User, List<Book>>> borrowers = new();
+
+    protected override void OnInitialized()
+    {
+        booksDict = LibraryService.GetBooks();
+
+        // Skip users whose borrowed list is empty.
+        borrowers = LibraryService.GetBorrowedBooks()
+            .Where(kv => kv.Value.Count > 0)
+            .ToList();
+    }
+}

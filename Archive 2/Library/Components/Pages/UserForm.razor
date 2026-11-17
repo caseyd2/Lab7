@@ -1,0 +1,64 @@
+@page "/users/add"
+@page "/users/edit/{Id:int}"
+@rendermode InteractiveServer
+@inject LibraryService LibraryService
+@inject NavigationManager Navigation
+
+<PageTitle>@(Id == null ? "Add User" : "Edit User")</PageTitle>
+
+@if (user == null)
+{
+    <p>User not found. <a href="/users">Back to users</a></p>
+}
+else
+{
+    <FormBody Model="user" Title="@(Id == null ? "Add user" : $"Edit user {Id}")" CancelUrl="/users" OnValidSubmit="Save">
+        <div class="mb-3">
+            <label class="form-label">Name</label>
+            <InputText class="form-control" @bind-Value="user.Name" />
+            <ValidationMessage For="() => user.Name" />
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Email</label>
+            <InputText type="email" class="form-control" @bind-Value="user.Email" />
+            <ValidationMessage For="() => user.Email" />
+        </div>
+    </FormBody>
+}
+
+@code {
+    // Null on /users/add, set on /users/edit/5.
+    [Parameter] public int? Id { get; set; }
+
+    private User? user;
+
+    protected override void OnInitialized()
+    {
+        if (Id == null)
+        {
+            user = new User();
+            return;
+        }
+
+        // Edit a copy, so leaving the page without saving leaves the real user untouched.
+        var existing = LibraryService.GetUser(Id.Value);
+        if (existing != null)
+        {
+            user = new User { Id = existing.Id, Name = existing.Name, Email = existing.Email };
+        }
+    }
+
+    private void Save()
+    {
+        if (Id == null)
+        {
+            LibraryService.AddUser(user!);
+        }
+        else
+        {
+            LibraryService.EditUser(user!);
+        }
+
+        Navigation.NavigateTo("/users");
+    }
+}

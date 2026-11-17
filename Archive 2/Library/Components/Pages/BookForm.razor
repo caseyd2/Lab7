@@ -1,0 +1,74 @@
+@page "/books/add"
+@page "/books/edit/{Id:int}"
+@rendermode InteractiveServer
+@inject LibraryService LibraryService
+@inject NavigationManager Navigation
+
+<PageTitle>@(Id == null ? "Add Book" : "Edit Book")</PageTitle>
+
+@if (book == null)
+{
+    <p>Book not found. <a href="/books">Back to books</a></p>
+}
+else
+{
+    <FormBody Model="book" Title="@(Id == null ? "Add book" : $"Edit book {Id}")" CancelUrl="/books" OnValidSubmit="Save">
+        <div class="mb-3">
+            <label class="form-label">Title</label>
+            <InputText class="form-control" @bind-Value="book.Title" />
+            <ValidationMessage For="() => book.Title" />
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Author</label>
+            <InputText class="form-control" @bind-Value="book.Author" />
+            <ValidationMessage For="() => book.Author" />
+        </div>
+        <div class="mb-3">
+            <label class="form-label">ISBN</label>
+            <InputText class="form-control" @bind-Value="book.ISBN" />
+            <ValidationMessage For="() => book.ISBN" />
+        </div>
+    </FormBody>
+}
+
+@code {
+    // Null on /books/add, set on /books/edit/<int>.
+    [Parameter] public int? Id { get; set; }
+
+    private Book? book;
+
+    protected override void OnInitialized()
+    {
+        if (Id == null)
+        {
+            book = new Book();
+            return;
+        }
+
+        // Edit a COPY, so leaving the page without saving leaves the real book untouched.
+        var existing = LibraryService.GetBook(Id.Value);
+        if (existing != null)
+        {
+            book = new Book { Id = existing.Id,
+                              Title = existing.Title,
+                              Author = existing.Author,
+                              ISBN = existing.ISBN };
+        }
+    }
+
+
+    
+    private void Save()
+    {
+        if (Id == null)
+        {
+            LibraryService.AddBook(book!);
+        }
+        else
+        {
+            LibraryService.EditBook(book!);
+        }
+
+        Navigation.NavigateTo("/books");
+    }
+}

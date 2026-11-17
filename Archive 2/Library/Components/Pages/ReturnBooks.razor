@@ -1,0 +1,71 @@
+
+@page "/users/return/{Id:int}"
+@rendermode InteractiveServer
+@inject LibraryService LibraryService
+@inject NavigationManager Navigation
+
+<PageTitle>Return Books</PageTitle>
+
+@if (user == null)
+{
+    <p>User not found. <a href="/users">Back to users</a></p>
+}
+else if (choices.Count == 0)
+{
+    <h1>Return Books</h1>
+    <p>@user.Name has no borrowed books to return.</p>
+    <a href="/users" class="btn btn-secondary">Back to users</a>
+}
+else
+{
+    <FormBody Model="choices" Title="Return books" SubmitText="Return selected"
+              CancelUrl="/users" OnValidSubmit="Return">
+        <p>Books borrowed by <strong>@user.Name</strong>. Check the ones being returned:</p>
+
+        @foreach (var choice in choices)
+        {
+            <div class="form-check mb-2">
+                <InputCheckbox class="form-check-input"
+                               id="@($"book-{choice.Book.Id}")"
+                               @bind-Value="choice.Selected" />
+                <label class="form-check-label" for="@($"book-{choice.Book.Id}")">
+                    @choice.Book.Title
+                    <span class="text-muted">(ISBN: @choice.Book.ISBN)</span>
+                </label>
+            </div>
+        }
+    </FormBody>
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private User? user;
+    private List<ReturnChoice> choices = new();
+
+    // One checkbox per borrowed book.
+    private class ReturnChoice
+    {
+        public Book Book { get; set; } = default!;
+        public bool Selected { get; set; }
+    }
+
+    protected override void OnInitialized()
+    {
+        user = LibraryService.GetUser(Id);
+
+        choices = LibraryService.GetBorrowedBooks(Id)
+            .Select(b => new ReturnChoice { Book = b })
+            .ToList();
+    }
+
+    private void Return()
+    {
+        foreach (var choice in choices.Where(c => c.Selected))
+        {
+            LibraryService.ReturnBook(Id, choice.Book.Id);
+        }
+
+        Navigation.NavigateTo("/users");
+    }
+}

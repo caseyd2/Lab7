@@ -1,0 +1,57 @@
+@page "/books/borrow/{Id:int}"
+@rendermode InteractiveServer
+@inject LibraryService LibraryService
+@inject NavigationManager Navigation
+
+<PageTitle>Borrow Book</PageTitle>
+
+@if (book == null)
+{
+    <p>Book not found. <a href="/books">Back to books</a></p>
+}
+else if (available == 0)
+{
+    <p>No copies of <strong>@book.Title</strong> are available right now. <a href="/books">Back to books</a></p>
+}
+else
+{
+    <FormBody Model="book" Title="Borrow book" SubmitText="Borrow" CancelUrl="/books" OnValidSubmit="Borrow">
+        <p><strong>@book.Title</strong> by @book.Author (ISBN: @book.ISBN). Available copies: @available</p>
+
+        <div class="mb-3">
+            <label class="form-label">Borrower</label>
+            <InputSelect class="form-select" @bind-Value="userId">
+                @foreach (var user in LibraryService.GetUsers())
+                {
+                    <option value="@user.Id">@user.Name (@user.Email)</option>
+                }
+            </InputSelect>
+        </div>
+    </FormBody>
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private Book? book;
+    private int available;
+    private int userId;
+
+    protected override void OnInitialized()
+    {
+        book = LibraryService.GetBook(Id);
+        if (book != null)
+        {
+            available = LibraryService.CountAvailableCopies(book.ISBN);
+        }
+
+        // Start with the first user selected so the dropdown always has a value.
+        userId = LibraryService.GetUsers().FirstOrDefault()?.Id ?? 0;
+    }
+
+    private void Borrow()
+    {
+        LibraryService.BorrowBook(userId, book!.ISBN);
+        Navigation.NavigateTo("/books");
+    }
+}

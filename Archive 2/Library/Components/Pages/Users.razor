@@ -1,0 +1,110 @@
+
+@page "/users"
+@inject LibraryService LibraryService
+
+<PageTitle>User Management</PageTitle>
+
+<h1 class="bi bi-people"> User Management</h1>
+
+<div class="grid-2">
+    <section class="menu-section">
+        <header class="menu-section-header">
+            <h2 class="bi bi-people-fill">All users</h2>
+            <a class="btn btn-primary mb-2" href="/users/add" style="float: right;">
+                <i class="bi bi-plus-lg"></i> Add user
+            </a>
+        </header>
+
+        <div data-list="name,email">
+            <input type="search" class="search mb-2"
+                   placeholder="Search users..." style="width: 100%;" />
+
+            <button class="sort btn btn-secondary mb-2 fs-200" data-sort="name">
+                Sort By Name (A-Z)
+            </button>
+
+            <ul class="list" style="list-style-type: none; padding: 0;">
+                @foreach (var user in users)
+                {
+                    <li class="menu-section-card mb-1">
+                        <div class="row text-muted mb-2 fs-200">
+                            <span class="text-muted" style="float: left; margin: -10px 10px 8px 0;">
+                                ID: @user.Id
+                            </span>
+
+                            <div class="col-4 fs-400 name">
+                                @user.Name
+                            </div>
+
+                            <div class="col-4 fs-200 email">
+                                @user.Email
+                            </div>
+
+                            <a href="users/edit/@user.Id" class="col-2">
+                                <i class="bi bi-pencil-fill"></i> Edit
+                            </a>
+
+                            <a href="users/delete/@user.Id" class="col-2 text-danger">
+                                <i class="bi bi-trash-fill"></i> Delete
+                            </a>
+                        </div>
+                    </li>
+                }
+            </ul>
+        </div>
+    </section>
+
+    <section class="menu-section">
+        <header class="menu-section-header">
+            <h2>Borrowing</h2>
+        </header>
+
+        @if (borrowers.Count == 0)
+        {
+            <div class="menu-section-card" style="flex-basis: 100%;">
+                <p class="mb-0">No books are currently borrowed.</p>
+            </div>
+        }
+
+        @foreach (var (user, borrowed) in borrowers)
+        {
+            <div class="menu-section-card" style="flex-basis: 100%;">
+                <div class="row text-bold mb-2">
+                    <div class="col fs-400">@user.Name</div>
+
+                    <a href="users/return/@user.Id"
+                       class="col-4 btn btn-secondary btn-sm">
+                        Return books
+                    </a>
+                </div>
+
+                <ul class="mb-0">
+                    @foreach (var book in borrowed)
+                    {
+                        <li>
+                            @book.Title
+                            <span class="text-muted">
+                                (ISBN: @book.ISBN)
+                            </span>
+                        </li>
+                    }
+                </ul>
+            </div>
+        }
+    </section>
+</div>
+
+@code {
+    private List<User> users = new();
+    private List<KeyValuePair<User, List<Book>>> borrowers = new();
+
+    protected override void OnInitialized()
+    {
+        users = LibraryService.GetUsers();
+
+        // Skip users whose borrowed list is empty.
+        borrowers = LibraryService.GetBorrowedBooks()
+            .Where(kv => kv.Value.Count > 0)
+            .ToList();
+    }
+}

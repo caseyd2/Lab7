@@ -1,0 +1,59 @@
+@page "/books/delete/{Id:int}"
+@rendermode InteractiveServer
+@inject LibraryService LibraryService
+@inject NavigationManager Navigation
+
+<PageTitle>Delete Book</PageTitle>
+
+@if (book == null)
+{
+    <p>Book not found. <a href="/books">Back to books</a></p>
+}
+else
+{
+    <FormBody Model="book" Title="Delete book" SubmitText="Delete" SubmitClass="btn-danger" CancelUrl="/books" OnValidSubmit="Delete">
+        <p>Delete <strong>@book.Title</strong> by @book.Author (ISBN: @book.ISBN)? This cannot be undone.</p>
+
+        @if (copies > 1)
+        {
+            <div class="mb-3">
+                <label class="form-label">There are @copies copies of this book. Remove:</label>
+                <InputSelect class="form-select" @bind-Value="deleteMode">
+                    <option value="one">One copy</option>
+                    <option value="all">All @copies copies</option>
+                </InputSelect>
+            </div>
+        }
+    </FormBody>
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private Book? book;
+    private int copies;
+    private string deleteMode = "one";
+
+    protected override void OnInitialized()
+    {
+        book = LibraryService.GetBook(Id);
+        if (book != null)
+        {
+            copies = LibraryService.CountCopies(book.ISBN);
+        }
+    }
+
+    private void Delete()
+    {
+        if (deleteMode == "all")
+        {
+            LibraryService.DeleteAllCopies(book!.ISBN);
+        }
+        else
+        {
+            LibraryService.DeleteBook(Id);
+        }
+
+        Navigation.NavigateTo("/books");
+    }
+}

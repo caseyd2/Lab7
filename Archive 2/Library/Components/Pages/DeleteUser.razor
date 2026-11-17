@@ -1,0 +1,37 @@
+
+@page "/users/delete/{Id:int}"
+@rendermode InteractiveServer
+@inject LibraryService LibraryService
+@inject NavigationManager Navigation
+
+<PageTitle>Delete User</PageTitle>
+
+@if (user == null)
+{
+    <p>User not found. <a href="/users">Back to users</a></p>
+}
+else
+{
+    <FormBody Model="user" Title="Delete user"
+              SubmitText="Delete" SubmitClass="btn-danger"
+              CancelUrl="/users" OnValidSubmit="Delete">
+        <p>Delete <strong>@user.Name</strong> (@user.Email)? This cannot be undone.</p>
+    </FormBody>
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private User? user;
+
+    protected override void OnInitialized()
+    {
+        user = LibraryService.GetUser(Id);
+    }
+
+    private void Delete()
+    {
+        LibraryService.DeleteUser(Id);
+        Navigation.NavigateTo("/users");
+    }
+}
